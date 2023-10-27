@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express'
-import { AddFood, GetFood, GetVendorProfile, UpdateVendorCoverImage, UpdateVendorProfile, UpdateVendorService, VendorLogin } from '../controllers';
+import { AddFood, AddOffer, DeleteOffer, GetCurrentOrders, GetFood, GetOffers, GetVendorProfile, GetrOrderDeatil, OrderProcess, UpdateOffer, UpdateVendorCoverImage, UpdateVendorProfile, UpdateVendorService, VendorLogin } from '../controllers';
 import { Authenticate } from '../middlewares';
 import { AuthPayload } from '../dto/Auth.dto';
 import multer from 'multer';
@@ -43,6 +43,17 @@ router.patch('/coverimage', images, UpdateVendorCoverImage)
 // food
 router.post('/food', images, AddFood)
 router.get('/foods', GetFood)
+
+// order
+router.get('/orders', GetCurrentOrders)
+router.get('/order/:id', GetrOrderDeatil)
+router.put('/order/:id/process', OrderProcess)
+
+// offer
+router.get('/offers', GetOffers)
+router.post('/offer', AddOffer)
+router.put('/offer/:id', UpdateOffer)
+router.delete('/offer/:id', DeleteOffer)
 
 // get
 router.get('/',(req:Request, res:Response, next:NextFunction) => {

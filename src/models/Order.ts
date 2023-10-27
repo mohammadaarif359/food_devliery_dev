@@ -8,6 +8,11 @@ export interface OrderDoc extends Document {
     paidThrough:string // [COD,Credit Card,Wallet]
     paymentResponse:string // {status:ture,response:payment response}
     orderStatus:string
+    remarks:string|null
+    readyTime:Number|null
+    deliveryId:string|null
+    offerApply:boolean
+    offerId:string|null
 }   
 
 const OrderSchema = new Schema({
@@ -38,6 +43,27 @@ const OrderSchema = new Schema({
     },
     orderStatus:{
         type:String
+    },
+    readyTime:{
+        type:Number,
+        deafult:null
+    },
+    remarks:{
+        type:String,
+        deafult:null
+    },
+    deliveryId:{
+        type:String,
+        deafult:null
+    },
+    offerApply:{
+        type:Boolean,
+        deafult:false
+    },
+    offerId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"offer",
+        deafult:null
     }
 },{
     toJSON:{ // for remove the give which not return in response

@@ -14,6 +14,7 @@ interface CustomerDoc extends Document {
     verified:boolean;
     otp:number;
     otp_expiry:Date;
+    cart:[any]
     orders:[OrderDoc]
 }
 
@@ -30,6 +31,12 @@ const CustomerSchema = new Schema({
     verified:{ type:Boolean, required:true},
     otp: { type:Number, require:true},
     otp_expiry: { type:Date,require:true },
+    cart:[
+        {
+            food: { type: Schema.Types.ObjectId, ref: 'food', require: true},
+            unit: { type: Number, require: true}
+        }
+    ],
     orders:[
         {  type:Schema.Types.ObjectId,ref:'order'}
     ]

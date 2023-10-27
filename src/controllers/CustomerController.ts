@@ -5,6 +5,7 @@ import { CreateCustomerInput,CreateOrderInput,CustomerLoginInput, UpdateCustomer
 import { GenerateOtp, GeneratePassword, GenerateSalt, GenerateToken, ValidatePassword, onRequestOtp } from "../utility";
 import { Customer, Food } from "../models";
 import { Order } from "../models/Order";
+import { CompositionListInstance } from "twilio/lib/rest/video/v1/composition";
 
 export const CustomerSingUp = async(req:Request,res:Response,next:NextFunction) => {
     const customerInputs = plainToClass(CreateCustomerInput,req.body)
@@ -152,6 +153,64 @@ export const UpdateCustomerProfile = async(req:Request,res:Response,next:NextFun
      
 }
 
+// cart
+export const AddCart = async(req:Request,res:Response,next:NextFunction) => {
+    const customer = req.user
+    const profile = await Customer.findById(customer._id).populate('cart.food')
+    if(customer && profile) {
+        let cartItems = []
+        const {_id,unit} = <CreateOrderInput>req.body
+        // check cart food exits
+        const food = await Food.findById(_id)
+        if(food) {
+            cartItems = profile.cart;
+            if(cartItems.length > 0) {
+                // check item extis and update
+                let exitsFoodCart = cartItems.filter((item)=> item.food._id.toString() === _id)
+                if(exitsFoodCart.length > 0) {
+                    const index = cartItems.indexOf(exitsFoodCart[0])
+                    if(unit > 0) {
+                        cartItems[index] = {food,unit}
+                    } else {
+                        cartItems.splice(index,1)
+                    }
+                    
+                } else {
+                    cartItems.push({food,unit})
+                }
+            } else {
+                // add new
+                cartItems.push({food,unit})
+            }
+            if(cartItems) {
+                profile.cart = cartItems as any
+                const result = await profile.save()
+                return res.status(200).json(result.cart)
+            } 
+        }
+    }
+    return res.status(400).json({'message':'customer not found'})
+
+}    
+export const GetCart = async(req:Request,res:Response,next:NextFunction) => {
+    const customer = req.user
+    if(customer) {
+        const profile = await Customer.findById(customer._id).populate('cart.food')
+        return res.status(200).json(profile.cart)
+    }
+    return res.status(400).json({'message':'customer not found'})
+}
+export const DeleteCart = async(req:Request,res:Response,next:NextFunction) => {
+    const customer = req.user
+    if(customer) {
+        const profile = await Customer.findById(customer._id).populate('cart.food')
+        profile.cart = [] as any;
+        const result = await profile.save();
+        return res.status(200).json(result.cart)
+    }
+    return res.status(400).json({'message':'cart alreay empty'})
+}
+
 export const CreateOrder = async(req:Request,res:Response,next:NextFunction) => {
     // logged in user
     const customer = req.user
@@ -165,6 +224,7 @@ export const CreateOrder = async(req:Request,res:Response,next:NextFunction) => 
         console.log('cart',cart)
         let cartItems = [];
         let netAmount = 0.0
+        let vendorId;
 
         // calculate order amount
         const foods = await Food.find().where('_id').in(cart.map(item=> item._id)).exec();
@@ -172,6 +232,7 @@ export const CreateOrder = async(req:Request,res:Response,next:NextFunction) => 
         foods.map(food=>{
             cart.map(({_id,unit})=>{
                 if(food._id == _id) {
+                    vendorId = food.vendorId
                     netAmount += food.price * unit
                     cartItems.push({food,unit})
                 }
@@ -183,16 +244,24 @@ export const CreateOrder = async(req:Request,res:Response,next:NextFunction) => 
         if(cartItems) {
             const order = await Order.create({
                 orderId,
+                vendorId,
                 items:cartItems,
                 totalAmount:netAmount,
                 orderDate:new Date(),
                 paidThrough:'COD',
                 paymentResponse:'',
-                orderStatus:'Waiting'
+                orderStatus:'Waiting',
+                readyTime:45
+
             })
             // update order to user account
             if(order) {
+                // make cart clean
+                profile.cart = [] as any;
+                
+                // add order to customer account
                 profile.orders.push(order);
+                
                 await profile.save();
                 return res.status(200).json(order)
             }
