@@ -43,7 +43,6 @@ export const GetTopResturant = async(req:Request,res:Response,next:NextFunction)
     }      
     return res.status(400).json({"message":"Data not found"}) 
 }
-
 export const GetFoodIn30Min = async(req:Request,res:Response,next:NextFunction) => {
     const pincode = req.params.pincode;
     const result = await Vendor.find({pincode:pincode,serviceAvialable:true}).populate('foods')
