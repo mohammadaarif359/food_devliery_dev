@@ -1,42 +1,45 @@
 import express, { Request, Response, NextFunction } from 'express'
-import { AddCart, CreateOrder, CustomerLogin, CustomerSingUp, CustomerVerify, DeleteCart, GetCart, GetCustomerProfile, GetOrderById, GetOrders, RequestOtp, UpdateCustomerProfile } from '../controllers';
+import { AddCart, CreateOrder, CreatePayment, CustomerLogin, CustomerSingUp, CustomerVerify, DeleteCart, GetCart, GetCustomerProfile, GetOrderById, GetOrders, RequestOtp, UpdateCustomerProfile, VerifyOffer } from '../controllers';
 import { Authenticate } from '../middlewares';
 
 const router = express.Router();
-// customer signup and profile
-/*  signup  */
+// customer
+// singup
 router.post('/signup', CustomerSingUp)
-
-/*  Login  */
+// login
 router.post('/login', CustomerLogin)
-
-/* After this all route reuqired authentication */
+// authenticate
 router.use(Authenticate)
-
-/*  Verify Account  */
+// acount verfify
 router.post('/verify', CustomerVerify)
-
-/*  Otp  */
+// otp get
 router.get('/otp', RequestOtp)
-
-/*  Profile get */
+// profole get
 router.get('/profile', GetCustomerProfile)
-/* Profile update */
+// profile update
 router.patch('/profile', UpdateCustomerProfile)
 
-// Carts
-/* Add cart */
+// carts
+// cart - add
 router.post('/cart', AddCart)
-
+// cart - get
 router.get('/cart', GetCart)
-
+// cart - delete
 router.delete('/cart', DeleteCart)
 
-// Orders
-/*  Order create */
+// orders
+// order - create 
 router.post('/order', CreateOrder)
-/*  Order get */
+// order - get
 router.get('/orders', GetOrders)
-/*  Order by id */
+// order - deatils
 router.get('/order/:id', GetOrderById)
+
+// offer
+// offer - verify
+router.get('/offer/verify/:id', VerifyOffer)
+
+// payment
+// payment - create
+router.post('/payment', CreatePayment)
 export { router as CustomerRoute };

@@ -51,10 +51,14 @@ export const UpdateVendorProfile  = async(req:Request,res:Response,next:NextFunc
 }
 
 export const UpdateVendorService  = async(req:Request,res:Response,next:NextFunction) => {
-    const {name,address,phone,foodType} = <EditVendorInput>req.body
+    const {lat,lng} = req.body
     const vendor  = await findVendor(req.user._id)
     if(vendor) {
         vendor.serviceAvialable = !vendor.serviceAvialable;
+        if(lat && lng) {
+            vendor.lat = lat
+            vendor.lng = lng
+        }
         const updatedVendor = await vendor.save();
         return res.status(200).json(updatedVendor)
     } else {
@@ -155,6 +159,26 @@ export const OrderProcess = async(req:Request,res:Response,next:NextFunction) =>
 }
 
 export const GetOffers = async(req:Request,res:Response,next:NextFunction) => {
+    const user = req.user
+    if(user) {
+        let currentOffers = [];
+        const offers = await Offer.find().populate('vendors')
+        if(offers) {
+            offers.map(offer=>{
+                if(offer.vendors) {
+                    offer.vendors.map(vendor=>{
+                        if(vendor._id.toString() === user._id) {
+                            currentOffers.push(offer)
+                        }
+                    })
+                } else if(offer.offerType == 'GENERIC') {
+                    currentOffers.push(offer)
+                }    
+            })
+        }
+        return res.status(200).json(currentOffers)
+    }
+    res.status(400).json({"message":"Offers not found"})
 }
 
 export const AddOffer = async(req:Request,res:Response,next:NextFunction) => {
@@ -178,12 +202,38 @@ export const AddOffer = async(req:Request,res:Response,next:NextFunction) => {
                 pincode,
                 isActive
             })
+            return res.status(200).json(offer)
         }
     }
     return res.status(200).json({"message":"vendor not found"})
 }
 
 export const UpdateOffer = async(req:Request,res:Response,next:NextFunction) => {
+    const user = req.user
+    const id = req.params.id
+    if(user) {
+        const { offerType,title,description,minValue,offerAmount,startValidity,endValidity,promocode,promoType,bank,bins,pincode,isActive } = <CreateOfferInput>req.body
+        const offer = await Offer.findById(id)
+        const vendor = await Vendor.findById(user._id)
+        if(vendor && offer) {
+            offer.offerType = offerType;
+            offer.title = title,
+            offer.description = description;
+            offer.minValue = minValue;
+            offer.offerAmount = offerAmount
+            offer.startValidity = startValidity;
+            offer.endValidity = endValidity;
+            offer.promocode = promocode;
+            offer.promoType = promoType;
+            offer.bank = bank;
+            offer.bins = bins;
+            offer.pincode = pincode;
+            offer.isActive = isActive;
+            const result = await offer.save();
+            return res.status(200).json(result)
+        }
+    }
+    return res.status(200).json({"message":"vendor offer not found"})
 }
 
 export const DeleteOffer = async(req:Request,res:Response,next:NextFunction) => {

@@ -14,6 +14,8 @@ interface VendorDoc extends Document {
     converImages:[string];
     rating:number;
     foods:any;
+    lat:number;
+    lng:number;
 }
 
 const VendorSchema = new Schema({
@@ -22,6 +24,8 @@ const VendorSchema = new Schema({
     foodType:{ type:[String]},
     pincode:{ type:String, require:true},
     address:{ type:String},
+    lat:{ type:Number,deafult:0},
+    lng:{ type:Number,deafult:0},
     phone:{ type:String, require:true},
     email:{ type:String, require:true},
     password:{ type:String, require:true},

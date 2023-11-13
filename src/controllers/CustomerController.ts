@@ -3,7 +3,7 @@ import { plainToClass } from 'class-transformer'
 import { validate } from "class-validator";
 import { CreateCustomerInput,CreateOrderInput,CustomerLoginInput, UpdateCustomerInput } from "../dto/Customer.dto";
 import { GenerateOtp, GeneratePassword, GenerateSalt, GenerateToken, ValidatePassword, onRequestOtp } from "../utility";
-import { Customer, Food } from "../models";
+import { Customer, DeliveryUser, Food, Offer, Transaction, Vendor } from "../models";
 import { Order } from "../models/Order";
 import { CompositionListInstance } from "twilio/lib/rest/video/v1/composition";
 
@@ -211,6 +211,30 @@ export const DeleteCart = async(req:Request,res:Response,next:NextFunction) => {
     return res.status(400).json({'message':'cart alreay empty'})
 }
 
+const assignOrderForDelivery = async(orderId: string, vendorId: string) => {
+    // find the vendor
+    const vendor = await Vendor.findById(vendorId);
+    if(vendor){
+        const areaCode = vendor.pincode;
+        const vendorLat = vendor.lat;
+        const vendorLng = vendor.lng;
+        //find the available Delivery person
+        const deliveryPerson = await DeliveryUser.find({ pincode: areaCode, verified: true, isAvailable: true});
+        if(deliveryPerson){
+            // Check the nearest delivery person and assign the order
+            const currentOrder = await Order.findById(orderId);
+            if(currentOrder){
+                //update Delivery ID
+                currentOrder.deliveryId = deliveryPerson[0]._id; 
+                await currentOrder.save();
+
+                // notify delivery and vendor person for order
+            }
+        }
+    }
+}
+
+
 export const CreateOrder = async(req:Request,res:Response,next:NextFunction) => {
     // logged in user
     const customer = req.user
@@ -293,3 +317,41 @@ export const GetOrderById = async(req:Request,res:Response,next:NextFunction) =>
         return res.status(400).json({"message":"ordet not found"})
     }
 }
+
+export const VerifyOffer = async(req:Request,res:Response,next:NextFunction) => {
+    const user = req.user
+    const id = req.params.id
+    const offer = await Offer.findOne({_id:id,isActive:true})
+    if(offer) {
+        return res.status(200).json({"message":"This offer is valid",offer})
+    }
+    return res.status(400).json({"message":"offer not found"}) 
+}
+
+export const CreatePayment = async(req:Request,res:Response,next:NextFunction) => {
+    const user = req.user
+    const {amount,paymentMode,offerId} = req.body
+    let payAmount = Number(amount)
+
+    if(offerId) {
+        const appliedOffer = await Offer.findOne({_id:offerId,isActive:true})
+        if(appliedOffer) {
+            payAmount = amount - appliedOffer.offerAmount
+        }
+    }
+    // payment gateway api call
+
+    // add payment transction
+    const transction = await Transaction.create({
+        cusotmerId:user._id,
+        vendorId:user._id,
+        orderId:user._id,
+        offerId: offerId || null,
+        orderValue:payAmount,
+        status:'Peding',
+        paymentMode:paymentMode,
+        paymentResponse:null
+    })
+
+    return res.status(200).json(transction)
+}    
